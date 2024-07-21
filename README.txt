@@ -17,6 +17,7 @@ Tradeoffs:
 - I avoided duplicating urls in the output list via a Set. This worked fine for the input file provided. However, in the case where there were a huge number of urls to output, the 
   limited memory of the computer would be a problem for the Set solution. I could have used a sqlite db to achieve the same thing more robustly but that felt over-engineered for 
   the scope of this assignment.
+- I didn't bother overwriting any existing output file, so if you run the script a second time without removing the output file the results from subsequent runs will get appendedto , not replace the file. 
 
 "Hints and Pointers":
 - How do you handle the file size and format efficiently, when the uncompressed file will exceed memory limitations on most systems?

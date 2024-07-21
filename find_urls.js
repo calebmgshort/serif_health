@@ -9,22 +9,22 @@ if(process.argv.length != 3) {
   process.exit(1);
 }
 const inputFilePath = process.argv[2];
-const outputFilePath = "final_url_list.txt"
+const outputFilePath = "output_url_list.txt"
 
 async function run() {
-  let mainStream = fs.createReadStream(inputFilePath);
+  let inputStream = fs.createReadStream(inputFilePath);
   if(inputFilePath.split('.').pop() == "gz") {
-    mainStream = mainStream.pipe(zlib.createGunzip());
+    inputStream = inputStream.pipe(zlib.createGunzip());
   }
-  mainStream = mainStream.pipe(parser());
+  inputStream = inputStream.pipe(parser());
 
   const outputStream = fs.createWriteStream(outputFilePath, { flags: 'a' });
 
   let reportingStructureLength = 0;
   let storedURLs = new Set();
   let numUrls = 0;
-  const reportingStructureStream = mainStream.pipe(pick({filter: 'reporting_structure'})).pipe(streamArray()); 
-  reportingStructureStream.on('data', data => { 
+  inputStream = inputStream.pipe(pick({filter: 'reporting_structure'})).pipe(streamArray()); 
+  inputStream.on('data', data => { 
     reportingStructureLength++; 
     const reporting_plans = data.value.reporting_plans;
     const in_network_files = data.value.in_network_files;
@@ -40,6 +40,7 @@ async function run() {
         break;
       }
     }
+    // 
     if(!isAnthem) {
       console.log('non-anthem plans: ' + JSON.stringify(reporting_plans));
       console.log('non-anthem files: ' + JSON.stringify(reporting_plans));
@@ -61,12 +62,13 @@ async function run() {
       }
     }
   });
-  reportingStructureStream.on('error', (error) => {
+  inputStream.on('error', (error) => {
     console.error(error);
   })
 
+  // Give myself something to look at while waiting for the script to finish running
   let i = 1;
-  while(!mainStream.closed) {
+  while(!inputStream.closed) {
     await new Promise((resolve, reject) => {
       setTimeout(() => {
         console.log(`after ${i} seconds: ${reportingStructureLength} reporting_structure array elements processed and ${numUrls} relevant urls found`)
@@ -76,6 +78,9 @@ async function run() {
     })
   }
 
+  outputStream.close();
+
+  // Some nice stats at the end
   console.log('total number of array elments processed in reporting_structure: ' + reportingStructureLength);
   console.log('total number of urls in the output list: ' + numUrls);
 }
